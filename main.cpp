@@ -31,13 +31,13 @@ float map[23][21] = {
     {0,1,0,0,0,1,0,  1,0,0, 0 ,0,0,1,  0,1,0,0,0,1,0},
     {0,1,1,1,1,1,0,  1,1,1, 0 ,1,1,1,  0,1,1,1,1,1,0},
     {0,0,0,0,0,1,0,  0,0,1, 0 ,1,0,0,  0,1,0,0,0,0,0},
-    {1,1,1,1,0,1,0,  1,1,1, 1 ,1,1,1,  0,1,0,1,1,1,1},
+    {2,2,2,2,0,1,0,  1,1,1, 1 ,1,1,1,  0,1,0,2,2,2,2},
     {0,0,0,0,0,1,0,  1,0,0, 1 ,0,0,1,  0,1,0,0,0,0,0},
     {1,1,1,1,1,1,1,  1,0,1, 1 ,1,0,1,  1,1,1,1,1,1,0},
     {0,0,0,0,0,1,0,  1,0,1, 1 ,1,0,1,  0,1,0,0,0,0,0},
 
-    {1,1,1,1,0,1,0,  1,0,0, 0 ,0,0,1,  0,1,0,1,1,1,1},
-    {1,1,1,1,0,1,0,  1,1,1, 1 ,1,1,1,  0,1,0,1,1,1,1},
+    {2,2,2,2,0,1,0,  1,0,0, 0 ,0,0,1,  0,1,0,2,2,2,2},
+    {2,2,2,2,0,1,0,  1,1,1, 1 ,1,1,1,  0,1,0,2,2,2,2},
     {0,0,0,0,0,1,1,  1,0,0, 0 ,0,0,1,  1,1,0,0,0,0,0},
     {0,1,1,1,1,1,1,  1,1,1, 0 ,1,1,1,  1,1,1,1,1,1,0},
     {0,1,0,0,0,1,0,  0,0,1, 0 ,1,0,0,  0,1,0,0,0,1,0},
@@ -120,6 +120,32 @@ void drawPacMan(int xc, int yc){
     glEnd();
 }
 
+void drawPoints(){
+    glColor3ub(255, 255, 255);
+
+    int i=0, j=0;
+    for(int i=0; i<map_height; i++){
+        for(int j=0; j<map_width; j++){
+        if(map[i][j] == 1){
+            glBegin(GL_POLYGON);        //DIAMOND SHAPED POINTS
+            // glVertex2f(j*square_size+square_size/2,i*square_size+square_size/5);              //top
+            // glVertex2f(j*square_size+square_size/3,i*square_size+square_size/2);              //left
+            
+            // glVertex2f(j*square_size+square_size/2,i*square_size+4*square_size/5);  //bottom
+            // glVertex2f(j*square_size+2*square_size/3,i*square_size+square_size/2);    //right
+
+            glVertex2f(j*square_size+square_size/2,i*square_size+square_size/2 - 3);              //top
+            glVertex2f(j*square_size+square_size/2 - 3,i*square_size+square_size/2);              //left
+            
+            glVertex2f(j*square_size+square_size/2,i*square_size+square_size/2 + 3);  //bottom
+            glVertex2f(j*square_size+square_size/2 + 3,i*square_size+square_size/2);    //right
+
+            glEnd();
+        }
+        }
+    }
+}
+
 void timer(int) //1 fps
 {
     glutPostRedisplay();
@@ -133,11 +159,9 @@ void display(){
 
     if(!gameOver){
         drawMap();
+        drawPoints();
         drawPacMan(pacmanX,pacmanY);    
 
-        // printf("x: %i, y: %i, check: %i\n",(int) ceil((pacmanX-square_size/2)/square_size),
-        // (int) ceil((pacmanY-square_size/2)/square_size), checkColision(pacmanX, pacmanY));
-        //&& checkColision(pacmanX, pacmanY-speed,0)!=0
         if(keySpecialStates[GLUT_KEY_UP] && checkColision(pacmanX, pacmanY-speed)!=0 ) {pacmanY -= speed; direction = 3*M_PI/2;}
         if(keySpecialStates[GLUT_KEY_DOWN] && checkColision(pacmanX, pacmanY+speed)!=0) {pacmanY += speed; direction = M_PI/2;}
         if(keySpecialStates[GLUT_KEY_LEFT] && checkColision(pacmanX-speed, pacmanY)!=0) {pacmanX -= speed; direction = M_PI;}
