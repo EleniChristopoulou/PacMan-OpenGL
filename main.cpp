@@ -7,9 +7,19 @@
 
 bool gameOver = false;
 
-
 float square_size = 30, map_width = 21, map_height = 23;
 float window_width = map_width*square_size, window_height = map_height*square_size;
+    int counter = 0;
+//Pacman Parameters
+float pacmanX = 10*square_size+square_size/2, pacmanY = 11*square_size+square_size/2, speed = 3, dx = 1, dy = 1;
+float mouth_start = M_PI/4;
+    //animation
+float direction = 0;
+bool increase = true;
+
+//keyboard
+bool* keyStates = new bool[256];
+bool* keySpecialStates = new bool[256];
 
 float map[23][21] = {
     {0,0,0,0,0,0,0,  0,0,0, 0 ,0,0,0,  0,0,0,0,0,0,0},
@@ -41,7 +51,6 @@ float map[23][21] = {
 };
 
 void drawMap(){
-    glColor3ub(0, 0, 255);
     
     glColor3ub(200, 0, 0);
 
@@ -61,6 +70,55 @@ void drawMap(){
     }
 }
 
+int checkColision(float nextPositionX, float nextPositionY){
+    
+    int up_right,down_right, up_left, down_left;
+    int val = 1;
+
+    // center = map[(int) round((nextPositionY-square_size/2)/square_size)][(int) round((nextPositionX-square_size/2)/square_size)];
+
+    up_right = map[(int) round((nextPositionY-square_size + val)/square_size)][(int) round((nextPositionX -val)/square_size)];
+    down_right = map[(int) round((nextPositionY- val)/square_size)][(int) round((nextPositionX -val)/square_size)];
+
+    up_left = map[(int) round((nextPositionY-square_size + val)/square_size)][(int) round((nextPositionX -square_size + val)/square_size)];
+    down_left = map[(int) round((nextPositionY-val)/square_size)][(int) round((nextPositionX -square_size + val)/square_size)];
+
+
+    return down_left*up_left*up_right*down_right;
+}
+
+void pacmanAnimation(){
+
+    if((counter%5)==0){
+        if(increase){
+            mouth_start = mouth_start + M_PI/10;
+            if(mouth_start >= M_PI / 4){
+                increase = false;
+            }
+        }else{
+            mouth_start = mouth_start - M_PI/10;
+            if(mouth_start <= 0){
+                increase = true;
+            }
+        }
+    }
+    counter ++ ;
+}
+
+void drawPacMan(int xc, int yc){
+    glColor3ub(255, 255, 0);
+
+    glBegin(GL_POLYGON);
+    glVertex2f(xc,yc);
+
+    pacmanAnimation();
+    
+    for(float theta=direction+mouth_start; theta<2*M_PI-mouth_start+direction; theta=theta+M_PI/10){
+        glVertex2f(xc + square_size/2*cos(theta),yc + square_size/2*sin(theta));
+    }
+
+    glEnd();
+}
 
 void timer(int) //1 fps
 {
@@ -74,13 +132,25 @@ void display(){
     glClear(GL_COLOR_BUFFER_BIT);
 
     if(!gameOver){
-        drawMap();    
+        drawMap();
+        drawPacMan(pacmanX,pacmanY);    
+
+        // printf("x: %i, y: %i, check: %i\n",(int) ceil((pacmanX-square_size/2)/square_size),
+        // (int) ceil((pacmanY-square_size/2)/square_size), checkColision(pacmanX, pacmanY));
+        //&& checkColision(pacmanX, pacmanY-speed,0)!=0
+        if(keySpecialStates[GLUT_KEY_UP] && checkColision(pacmanX, pacmanY-speed)!=0 ) {pacmanY -= speed; direction = 3*M_PI/2;}
+        if(keySpecialStates[GLUT_KEY_DOWN] && checkColision(pacmanX, pacmanY+speed)!=0) {pacmanY += speed; direction = M_PI/2;}
+        if(keySpecialStates[GLUT_KEY_LEFT] && checkColision(pacmanX-speed, pacmanY)!=0) {pacmanX -= speed; direction = M_PI;}
+        if(keySpecialStates[GLUT_KEY_RIGHT] && checkColision(pacmanX+speed, pacmanY)!=0) {pacmanX += speed; direction = 0;}
     }else{
         
     }
 
     glutSwapBuffers();
 }
+
+void specialKeyPressed(int key, int x, int y) {keySpecialStates[key] = true; }
+void specialKeyReleased(int key, int x, int y){ keySpecialStates[key] = false; }
 
 int main(int argc, char** argv)
 {
@@ -95,6 +165,9 @@ int main(int argc, char** argv)
  glMatrixMode(GL_MODELVIEW);
 
  glutDisplayFunc(display);
+ //keyboard
+ glutSpecialFunc(specialKeyPressed);
+ glutSpecialUpFunc(specialKeyReleased);
 
  glutTimerFunc(1000.0 / 60.0, timer, 0);
  glutMainLoop();
