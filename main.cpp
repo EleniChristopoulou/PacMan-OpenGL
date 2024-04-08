@@ -5,6 +5,8 @@
 #include<time.h>
 #include <cstdio>
 
+char message[60];
+int score=0;
 bool gameOver = false;
 
 float square_size = 30, map_width = 21, map_height = 23;
@@ -73,7 +75,7 @@ void drawMap(){
 int checkColision(float nextPositionX, float nextPositionY){
     
     int up_right,down_right, up_left, down_left;
-    int val = 1;
+    int val = 1;    //in order to narrow the borders of pacman
 
     // center = map[(int) round((nextPositionY-square_size/2)/square_size)][(int) round((nextPositionX-square_size/2)/square_size)];
 
@@ -120,6 +122,18 @@ void drawPacMan(int xc, int yc){
     glEnd();
 }
 
+void pacmanEat(){
+    int x,y;
+    
+    y = (int) round((pacmanY-square_size/2)/square_size); 
+    x = (int) round((pacmanX-square_size/2)/square_size);
+
+    if(map[y][x] == 1){
+        map[y][x] = 2;
+        score++;
+    }
+}
+
 void drawPoints(){
     glColor3ub(255, 255, 255);
 
@@ -128,11 +142,6 @@ void drawPoints(){
         for(int j=0; j<map_width; j++){
         if(map[i][j] == 1){
             glBegin(GL_POLYGON);        //DIAMOND SHAPED POINTS
-            // glVertex2f(j*square_size+square_size/2,i*square_size+square_size/5);              //top
-            // glVertex2f(j*square_size+square_size/3,i*square_size+square_size/2);              //left
-            
-            // glVertex2f(j*square_size+square_size/2,i*square_size+4*square_size/5);  //bottom
-            // glVertex2f(j*square_size+2*square_size/3,i*square_size+square_size/2);    //right
 
             glVertex2f(j*square_size+square_size/2,i*square_size+square_size/2 - 3);              //top
             glVertex2f(j*square_size+square_size/2 - 3,i*square_size+square_size/2);              //left
@@ -152,6 +161,21 @@ void timer(int) //1 fps
     glutTimerFunc(1000.0 / 60.0, timer, 0);
 }
 
+// void type(char *str, float x, float y, float s)
+// {
+//     glLineWidth(3);
+//     glEnable(GL_LINE_STIPPLE);
+//     glLineStipple(1, 0xFFFF);
+//     char *c;
+//     glPushMatrix();
+//     glTranslatef(y, x, 0);
+//     glScalef(0.1 * s, 0.1 * -s, 0);
+//     for (c = str; *c != '\0'; c++)
+//     glutStrokeCharacter(GLUT_STROKE_ROMAN, *c);
+//     glScalef(1, 1, 1);
+//     glPopMatrix();
+// }
+
 void display(){
     
     glClearColor(0.0f,0.0f,0.0f, 0.0f);   //background color
@@ -160,7 +184,13 @@ void display(){
     if(!gameOver){
         drawMap();
         drawPoints();
-        drawPacMan(pacmanX,pacmanY);    
+        drawPacMan(pacmanX,pacmanY);
+        pacmanEat();    
+
+        
+        // glColor3ub(255,255,255);;         //add score
+        // sprintf(message, "%d", score);
+        // type(message, 0, window_height/3, 3);
 
         if(keySpecialStates[GLUT_KEY_UP] && checkColision(pacmanX, pacmanY-speed)!=0 ) {pacmanY -= speed; direction = 3*M_PI/2;}
         if(keySpecialStates[GLUT_KEY_DOWN] && checkColision(pacmanX, pacmanY+speed)!=0) {pacmanY += speed; direction = M_PI/2;}
@@ -180,12 +210,12 @@ int main(int argc, char** argv)
 {
  glutInit(&argc,argv);
  glutInitWindowPosition(350, 0);
- glutInitWindowSize(window_width, window_height);
+ glutInitWindowSize(window_width, window_height); // window_height -> window_height+50
  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
  glutCreateWindow("OpenGL Pacman");
  glMatrixMode(GL_PROJECTION);
  glLoadIdentity();
- gluOrtho2D(0,window_width,window_height,0);
+ gluOrtho2D(0,window_width,window_height,0);        // 0 -> -50
  glMatrixMode(GL_MODELVIEW);
 
  glutDisplayFunc(display);
