@@ -7,7 +7,9 @@
 
 char message[60];
 int score=0;
+int num_of_lives = 3;
 bool gameOver = false;
+
 
 float square_size = 30, map_width = 21, map_height = 23;
 float window_width = map_width*square_size, window_height = map_height*square_size;
@@ -238,6 +240,36 @@ void drawGhost(int r, int g, int b, float x_cord, float y_cord){
     ghost_eyes(x_cord, y_cord);
 }
 
+void moveGhost(){
+    /*Check Colision With Ghost 1*/
+        float x_diff = fabsl(pacmanX-square_size/2-ghost1X); 
+        float y_diff = fabsl(pacmanY-square_size/2-ghost1Y);
+
+        if(x_diff<30 && y_diff<30){
+            printf("Gotcha By Ghost 1");
+            num_of_lives--;
+            pacmanX = 10*square_size+square_size/2;
+            pacmanY = 21*square_size+square_size/2;
+
+            ghost1X = 9*square_size, ghost1Y = 11*square_size;
+            ghost2X = 9*square_size, ghost2Y = 10*square_size;
+        }
+
+    /*Check Colision With Ghost 2*/
+        x_diff = fabsl(pacmanX-square_size/2-ghost2X); 
+        y_diff = fabsl(pacmanY-square_size/2-ghost2Y);
+    
+        if(x_diff<30 && y_diff<30){
+            printf("Gotcha By Ghost 2");
+            num_of_lives--;
+            pacmanX = 10*square_size+square_size/2;
+            pacmanY = 21*square_size+square_size/2;
+
+            ghost1X = 9*square_size, ghost1Y = 11*square_size;
+            ghost2X = 9*square_size, ghost2Y = 10*square_size;
+        }
+}
+
 void timer(int) //1 fps
 {
     glutPostRedisplay();
@@ -259,12 +291,41 @@ void type(char *str, float x, float y, float s)
     glPopMatrix();
 }
 
+void drawHeart(float square_num){
+    float xc = square_size* square_num, yc = - 35;
+    glColor3ub(255, 0, 0);
+
+    glBegin(GL_POLYGON);
+    glVertex2f(xc,yc);
+    for(float theta=0; theta<=M_PI; theta=theta+M_PI/10){
+        glVertex2f(xc + square_size/4*cos(theta) , yc - square_size/4*sin(theta));
+    }
+    glEnd(); 
+
+    xc += square_size/2-1;
+    glBegin(GL_POLYGON);
+    glVertex2f(xc,yc);
+    for(float theta=0; theta<=M_PI; theta=theta+M_PI/10){
+        glVertex2f(xc + square_size/4*cos(theta) , yc - square_size/4*sin(theta));
+    }
+    glEnd(); 
+
+    xc += square_size/4-1;
+    glColor3ub(255, 0, 0);
+    glBegin(GL_POLYGON);
+    glVertex2f(xc,yc);
+    glVertex2f(xc - square_size/2+1,yc + square_size/2);
+    glVertex2f(xc - square_size + 2,yc);
+    glEnd(); 
+
+}
+
 void display(){
     
     glClearColor(0.0f,0.0f,0.0f, 0.0f);   //background color
     glClear(GL_COLOR_BUFFER_BIT);
 
-    if(getPoints()!=0){
+    if(getPoints()!=0 && num_of_lives!=0){
         drawMap();
         drawPoints();
 
@@ -273,13 +334,20 @@ void display(){
 
         drawGhost(255,165,0, ghost1X, ghost1Y);     //Inky
         drawGhost(0,165,255, ghost2X, ghost2Y);     //Clyde
-        
+
+        moveGhost();
+
         char str[] = "Points: ";            //Add score
         glColor3ub(255,255,255);;         
         sprintf(message, "%d", (220-getPoints())*10);
         strcat(str, message);
         strcat(str, "/2200");
         type(str, -25, 10, 2);
+
+        type("Lives: ", -25, 30*15, 2);
+        for(int i=0; i<num_of_lives; i++){
+            drawHeart(16.5 + (float) (i+1));
+        }
 
         if(keySpecialStates[GLUT_KEY_UP] && checkColision(pacmanX, pacmanY-speed)!=0 ) {pacmanY -= speed; direction = 3*M_PI/2;}
         if(keySpecialStates[GLUT_KEY_DOWN] && checkColision(pacmanX, pacmanY+speed)!=0) {pacmanY += speed; direction = M_PI/2;}
@@ -288,7 +356,11 @@ void display(){
     }else{
         glColor3ub(255,255,255);
         
-        type("Game Over", window_height/2, window_width/2-70, 2);
+        if(num_of_lives==0){    //Game Over
+            type("Game Over", window_height/2, window_width/2-70, 2);
+        }else{                  //Player Won
+            type("You Won!", window_height/2, window_width/2-70, 2);
+        }
     }
 
     glutSwapBuffers();
