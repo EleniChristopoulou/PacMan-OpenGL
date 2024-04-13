@@ -12,8 +12,25 @@ bool gameOver = false;
 float square_size = 30, map_width = 21, map_height = 23;
 float window_width = map_width*square_size, window_height = map_height*square_size;
     int counter = 0;
+//Ghost Parametres
+float ghost1X = 9*square_size, ghost1Y = 11*square_size;
+float ghost2X = 9*square_size, ghost2Y = 10*square_size;
+
+int len_ghost = 78;
+float body_periemtre_ghost[78]= {0,0, 0,8,  1,8, 1,11
+                    ,2,11, 2,12,  3,12, 3,13
+                    ,5,13, 5,14,  7,14, 8,14
+                    ,8,13, 10,13,  10,12, 11,12
+                    ,11,11, 12,11,  12,8, 13,8
+
+                    ,13,0, 13,0,  13,1, 12,1
+                    ,12,2, 11,2,  11,1, 10,1
+                    ,10,0, 8,0,  8,2, 6,2
+                    ,6,0, 4,0,  4,1, 3,1
+                    ,3,2, 2,2,  2,1};
+
 //Pacman Parameters
-float pacmanX = 10*square_size+square_size/2, pacmanY = 11*square_size+square_size/2, speed = 3, dx = 1, dy = 1;
+float pacmanX = 10*square_size+square_size/2, pacmanY = 21*square_size+square_size/2, speed = 3, dx = 1, dy = 1;
 float mouth_start = M_PI/4;
     //animation
 float direction = 0;
@@ -168,6 +185,59 @@ void drawPoints(){
     }
 }
 
+void ghost_body(float x_cord, float y_cord){
+    float x = 0, y = 0;
+    
+    glBegin(GL_LINE_LOOP);        
+
+    for(int i=0; i<len_ghost; i=i+2){
+        x = body_periemtre_ghost[i];
+        y = body_periemtre_ghost[i+1];
+        glVertex2f(2*x+1+x_cord,2*(15-1 - y)+y_cord); 
+    } 
+
+    glEnd();
+}
+
+void ghost_eyes(float x_cord, float y_cord){
+    glColor3ub(255,255,255);
+    glBegin(GL_POLYGON);       //left eye 
+    float x=4 ,y=4;
+    glVertex2f(2*x+1+x_cord,2*y + y_cord); 
+    glVertex2f(2*(x+2)+1+x_cord ,2*y + y_cord); 
+
+    glVertex2f(2*(x+2)+1+x_cord ,2*(y+3)+y_cord); 
+    glVertex2f(2*x+1+x_cord,2*(y+3)+y_cord);
+    glEnd();
+
+    glBegin(GL_POLYGON);        //right eye
+    x=14-6;
+    glVertex2f(2*x+1 + x_cord,2*y + y_cord); 
+    glVertex2f(2*(x+2)+1 + x_cord,2*y + y_cord); 
+
+    glVertex2f(2*(x+2)+1 + x_cord,2*(y+3) + y_cord); 
+    glVertex2f(2*x+1 + x_cord,2*(y+3) + y_cord);
+    glEnd();
+}
+
+void drawGhost(int r, int g, int b, float x_cord, float y_cord){
+    /*Creating Black Box To Hide Points, (if background is changed it will need to be changed too!)*/
+        glColor3ub(0,0,0);        
+
+        glBegin(GL_POLYGON);        
+        glVertex2f(x_cord, y_cord); 
+        glVertex2f(x_cord + square_size-1, y_cord); 
+
+        glVertex2f(x_cord + square_size-1, y_cord + square_size-1); 
+        glVertex2f(x_cord, y_cord + square_size-1);
+        glEnd();
+    /*end of balckbox creation*/
+
+    glColor3ub(r,g,b);     //Ghost Color
+    ghost_body(x_cord, y_cord);
+    ghost_eyes(x_cord, y_cord);
+}
+
 void timer(int) //1 fps
 {
     glutPostRedisplay();
@@ -199,13 +269,16 @@ void display(){
         drawPoints();
 
         drawPacMan(pacmanX,pacmanY);
-        pacmanEat();    
+        pacmanEat(); 
+
+        drawGhost(255,165,0, ghost1X, ghost1Y);     //Inky
+        drawGhost(0,165,255, ghost2X, ghost2Y);     //Clyde
         
         char str[] = "Points: ";            //Add score
         glColor3ub(255,255,255);;         
-        sprintf(message, "%d", 220-getPoints());
+        sprintf(message, "%d", (220-getPoints())*10);
         strcat(str, message);
-        strcat(str, "/220");
+        strcat(str, "/2200");
         type(str, -25, 10, 2);
 
         if(keySpecialStates[GLUT_KEY_UP] && checkColision(pacmanX, pacmanY-speed)!=0 ) {pacmanY -= speed; direction = 3*M_PI/2;}
