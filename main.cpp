@@ -4,12 +4,19 @@
 #include<math.h>
 #include<time.h>
 #include <cstdio>
+#include <iostream>
+#include <queue>
+#include <vector>
+#include <algorithm>
 
+using namespace std;
+std::queue<int> dir_ghost1, dir_ghost2;
+queue<pair<int,int>> squares_left;
+int counterMov=1;
+    
 char message[60];
 int score=0;
 int num_of_lives = 3;
-bool gameOver = false;
-
 
 float square_size = 30, map_width = 21, map_height = 23;
 float window_width = map_width*square_size, window_height = map_height*square_size;
@@ -240,7 +247,7 @@ void drawGhost(int r, int g, int b, float x_cord, float y_cord){
     ghost_eyes(x_cord, y_cord);
 }
 
-void moveGhost(){
+void pacmanGhostColission(){   //more about checking collision with pacman 
     /*Check Colision With Ghost 1*/
         float x_diff = fabsl(pacmanX-square_size/2-ghost1X); 
         float y_diff = fabsl(pacmanY-square_size/2-ghost1Y);
@@ -253,6 +260,16 @@ void moveGhost(){
 
             ghost1X = 9*square_size, ghost1Y = 11*square_size;
             ghost2X = 9*square_size, ghost2Y = 10*square_size;
+
+            while (!dir_ghost1.empty()) {
+                dir_ghost1.pop();
+            }
+
+            while (!dir_ghost2.empty()) {
+                dir_ghost2.pop();
+            }
+
+            counterMov = 1;
         }
 
     /*Check Colision With Ghost 2*/
@@ -267,6 +284,16 @@ void moveGhost(){
 
             ghost1X = 9*square_size, ghost1Y = 11*square_size;
             ghost2X = 9*square_size, ghost2Y = 10*square_size;
+
+            while (!dir_ghost1.empty()) {
+                dir_ghost1.pop();
+            }
+
+            while (!dir_ghost2.empty()) {
+                dir_ghost2.pop();
+            }
+
+            counterMov = 1;
         }
 }
 
@@ -283,7 +310,7 @@ void type(char *str, float x, float y, float s)
     glLineStipple(1, 0xFFFF);
     char *c;
     glPushMatrix();
-    glTranslatef(y, x, 0);
+    glTranslatef(x, y, 0);
     glScalef(0.1 * s, 0.1 * -s, 0);
     for (c = str; *c != '\0'; c++)
     glutStrokeCharacter(GLUT_STROKE_ROMAN, *c);
@@ -320,8 +347,209 @@ void drawHeart(float square_num){
 
 }
 
-void display(){
+void moveGhost(int ghost, int move){
+    if(ghost == 1){
+        switch (move)
+        {
+        case 1:
+            ghost1X--;
+            break;
+        case 2:
+            ghost1Y--;
+            break;
+        case 3:
+            ghost1X++;
+            break;
+        case 4:
+            ghost1Y++;
+            break;
+        default:
+            break;
+        }
+    }
+
+    if(ghost == 2){
+        switch (move)
+        {
+        case 1:
+            ghost2X--;
+            break;
+        case 2:
+            ghost2Y--;
+            break;
+        case 3:
+            ghost2X++;
+            break;
+        case 4:
+            ghost2Y++;
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void setNeighbours(float dist_map[23][21], int x, int y){
+    int x_neigh = x - 1, y_neigh = y ;
+    if(x_neigh > -1){           //LEFT NEIGHBOUR
+        //not out of bounds
+        if((dist_map[y_neigh][x_neigh]==100) && (map[y_neigh][x_neigh]!=0)){
+            //means has no value yet, and its not a wall 
+            dist_map[y_neigh][x_neigh] = dist_map[y][x] + 1;   //increase it by 1
+            squares_left.push({y_neigh, x_neigh});
+        }
+    }
+
+    x_neigh = x + 1;
+    if(x_neigh < 21){           //RIGHT NEIGHBOUR
+        //not out of bounds
+        if((dist_map[y_neigh][x_neigh]==100) && (map[y_neigh][x_neigh]!=0)){
+            //means has no value yet, and its not a wall 
+            dist_map[y_neigh][x_neigh] = dist_map[y][x] + 1;   //increase it by 1
+            squares_left.push({y_neigh, x_neigh});
+        }
+    }
+
+    x_neigh = x, y_neigh = y - 1;
+    if(y_neigh > -1){           //UP NEIGHBOUR
+        //not out of bounds
+        if((dist_map[y_neigh][x_neigh]==100) && (map[y_neigh][x_neigh]!=0)){
+            //means has no value yet, and its not a wall 
+            dist_map[y_neigh][x_neigh] = dist_map[y][x] + 1;   //increase it by 1
+            squares_left.push({y_neigh, x_neigh});
+        }
+    }
+
+    y_neigh = y + 1;
+    if(y_neigh < 23){           //DOWN NEIGHBOUR
+        //not out of bounds
+        if((dist_map[y_neigh][x_neigh]==100) && (map[y_neigh][x_neigh]!=0)){
+            //means has no value yet, and its not a wall 
+            dist_map[y_neigh][x_neigh] = dist_map[y][x] + 1;   //increase it by 1
+            squares_left.push({y_neigh, x_neigh});
+        }
+    }
     
+}
+
+std::queue<int> getDircetions(int start_x, int start_y, int end_x, int end_y){
+    std::queue<int> directions;
+
+    if(start_x == end_x && start_y == end_y){
+        directions.push(-1);
+        return directions;
+    }
+    float dist_map[23][21];
+
+    for (int i = 0; i < 23; ++i) {      //initialising everythin to 100.
+        for (int j = 0; j < 21; ++j) {
+            dist_map[i][j] = 100;
+        }
+    } 
+
+    dist_map[end_y][end_x] = 0;
+    squares_left.push({end_y, end_x});
+
+    while (!squares_left.empty()){
+        pair<int,int> square = squares_left.front();
+        // setNeighbours(dist_map, square.second, square.first);
+        int x_neigh = square.second - 1, y_neigh = square.first ;
+        if(x_neigh > -1){           //LEFT NEIGHBOUR
+            //not out of bounds
+            if((dist_map[y_neigh][x_neigh]==100) && (map[y_neigh][x_neigh]!=0)){
+                //means has no value yet, and its not a wall 
+                dist_map[y_neigh][x_neigh] = dist_map[square.first][square.second] + 1;   //increase it by 1
+                squares_left.push({y_neigh, x_neigh});
+            }
+        }
+
+        x_neigh = square.second + 1;
+        if(x_neigh < 21){           //RIGHT NEIGHBOUR
+            //not out of bounds
+            if((dist_map[y_neigh][x_neigh]==100) && (map[y_neigh][x_neigh]!=0)){
+                //means has no value yet, and its not a wall 
+                dist_map[y_neigh][x_neigh] = dist_map[square.first][square.second] + 1;   //increase it by 1
+                squares_left.push({y_neigh, x_neigh});
+            }
+        }
+
+        x_neigh = square.second, y_neigh = square.first - 1;
+        if(y_neigh > -1){           //UP NEIGHBOUR
+            //not out of bounds
+            if((dist_map[y_neigh][x_neigh]==100) && (map[y_neigh][x_neigh]!=0)){
+                //means has no value yet, and its not a wall 
+                dist_map[y_neigh][x_neigh] = dist_map[square.first][square.second] + 1;   //increase it by 1
+                squares_left.push({y_neigh, x_neigh});
+            }
+        }
+
+        y_neigh = square.first + 1;
+        if(y_neigh < 23){           //DOWN NEIGHBOUR
+            //not out of bounds
+            if((dist_map[y_neigh][x_neigh]==100) && (map[y_neigh][x_neigh]!=0)){
+                //means has no value yet, and its not a wall 
+                dist_map[y_neigh][x_neigh] = dist_map[square.first][square.second] + 1;   //increase it by 1
+                squares_left.push({y_neigh, x_neigh});
+            }
+        }
+
+        squares_left.pop();
+    }
+
+    float value=100;
+    int direction = 0;
+    int x = start_x, y = start_y, x_check = start_x, y_check = start_y;
+
+    while (value!=0){
+        if(value > dist_map[y][x - 1]) {     //left
+            value = dist_map[y][x - 1];
+            x_check = x-1;
+            y_check = y;
+            direction = 1;
+        }
+
+        if(value > dist_map[y][x + 1]) {     //right
+            value = dist_map[y][x + 1];
+            y_check = y;
+            x_check = x+1;
+            direction = 3;
+        }
+
+        if(value > dist_map[y - 1][x]) {     //up
+            value = dist_map[y - 1][x];
+            x_check = x;
+            y_check = y - 1;
+            direction = 2;
+        }
+
+        if(value > dist_map[y + 1][x]) {     //down
+            value = dist_map[y + 1][x];
+            x_check = x;
+            y_check = y + 1;
+            direction = 4;
+        }
+
+        directions.push(direction);
+
+        y = y_check;
+        x = x_check;
+    }
+
+    return directions;
+} 
+//only for debugging purposes
+void showq(queue<int> gq)
+{
+    queue<int> g = gq;
+    while (!g.empty()) {
+        cout << ' ' << g.front();
+        g.pop();
+    }
+    cout << '\n';
+}
+
+void display(){
+
     glClearColor(0.0f,0.0f,0.0f, 0.0f);   //background color
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -335,16 +563,37 @@ void display(){
         drawGhost(255,165,0, ghost1X, ghost1Y);     //Inky
         drawGhost(0,165,255, ghost2X, ghost2Y);     //Clyde
 
-        moveGhost();
+        if(dir_ghost1.size() == 0){         
+            dir_ghost1 = getDircetions(ceil(ghost1X/square_size),
+            ceil(ghost1Y/square_size), 5,2);    
+        }else{  
+            moveGhost(1, (int) dir_ghost1.front());
+            if((counterMov%((int)square_size))==0){
+                dir_ghost1.pop();
+            }
+        }
+
+        if(dir_ghost2.size() == 0){                 //move Clude
+            dir_ghost2 = getDircetions(ceil(ghost2X/square_size),
+            ceil(ghost2Y/square_size), 5,2);  
+        }else{  
+            moveGhost(2, (int) dir_ghost2.front());
+            if((counterMov%((int)square_size))==0){
+                dir_ghost2.pop();
+            }
+            counterMov ++;
+        }
+
+        pacmanGhostColission();
 
         char str[] = "Points: ";            //Add score
         glColor3ub(255,255,255);;         
         sprintf(message, "%d", (220-getPoints())*10);
         strcat(str, message);
         strcat(str, "/2200");
-        type(str, -25, 10, 2);
+        type(str, 10, -25, 2);
 
-        type("Lives: ", -25, 30*15, 2);
+        type("Lives: ", 30*15, -25, 2);
         for(int i=0; i<num_of_lives; i++){
             drawHeart(16.5 + (float) (i+1));
         }
@@ -353,12 +602,13 @@ void display(){
         if(keySpecialStates[GLUT_KEY_DOWN] && checkColision(pacmanX, pacmanY+speed)!=0) {pacmanY += speed; direction = M_PI/2;}
         if(keySpecialStates[GLUT_KEY_LEFT] && checkColision(pacmanX-speed, pacmanY)!=0) {pacmanX -= speed; direction = M_PI;}
         if(keySpecialStates[GLUT_KEY_RIGHT] && checkColision(pacmanX+speed, pacmanY)!=0) {pacmanX += speed; direction = 0;}
+
     }else{
         glColor3ub(255,255,255);
         
         if(num_of_lives==0){    //Game Over
-            type("Game Over", window_height/2, window_width/2-70, 2);
-        }else{                  //Player Won
+            type("Game Over", window_height/2, window_width/2, 2);
+        }else{                  //Player Wins
             type("You Won!", window_height/2, window_width/2-70, 2);
         }
     }
