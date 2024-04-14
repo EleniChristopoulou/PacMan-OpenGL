@@ -8,11 +8,6 @@
 #include <queue>
 #include <vector>
 #include <algorithm>
-
-using namespace std;
-std::queue<int> dir_ghost1, dir_ghost2;
-queue<pair<int,int>> squares_left;
-int counterMov=1;
     
 char message[60];
 int score=0;
@@ -24,6 +19,11 @@ float window_width = map_width*square_size, window_height = map_height*square_si
 //Ghost Parametres
 float ghost1X = 9*square_size, ghost1Y = 11*square_size;
 float ghost2X = 9*square_size, ghost2Y = 10*square_size;
+
+using namespace std;
+std::queue<int> dir_ghost1, dir_ghost2;
+queue<pair<int,int>> squares_left;
+int counterMovGhost1 = 1, counterMovGhost2 = 1;
 
 int len_ghost = 78;
 float body_periemtre_ghost[78]= {0,0, 0,8,  1,8, 1,11
@@ -240,7 +240,7 @@ void drawGhost(int r, int g, int b, float x_cord, float y_cord){
         glVertex2f(x_cord + square_size-1, y_cord + square_size-1); 
         glVertex2f(x_cord, y_cord + square_size-1);
         glEnd();
-    /*end of balckbox creation*/
+    /*end of blackbox creation*/
 
     glColor3ub(r,g,b);     //Ghost Color
     ghost_body(x_cord, y_cord);
@@ -269,7 +269,8 @@ void pacmanGhostColission(){   //more about checking collision with pacman
                 dir_ghost2.pop();
             }
 
-            counterMov = 1;
+            counterMovGhost1 = 1;
+            counterMovGhost2 = 1;
         }
 
     /*Check Colision With Ghost 2*/
@@ -293,7 +294,8 @@ void pacmanGhostColission(){   //more about checking collision with pacman
                 dir_ghost2.pop();
             }
 
-            counterMov = 1;
+            counterMovGhost1 = 1;
+            counterMovGhost2 = 1;
         }
 }
 
@@ -497,7 +499,7 @@ std::queue<int> getDircetions(int start_x, int start_y, int end_x, int end_y){
     }
 
     float value=100;
-    int direction = 0;
+    int direction_one = 0;
     int x = start_x, y = start_y, x_check = start_x, y_check = start_y;
 
     while (value!=0){
@@ -505,31 +507,31 @@ std::queue<int> getDircetions(int start_x, int start_y, int end_x, int end_y){
             value = dist_map[y][x - 1];
             x_check = x-1;
             y_check = y;
-            direction = 1;
+            direction_one = 1;
         }
 
         if(value > dist_map[y][x + 1]) {     //right
             value = dist_map[y][x + 1];
             y_check = y;
             x_check = x+1;
-            direction = 3;
+            direction_one = 3;
         }
 
         if(value > dist_map[y - 1][x]) {     //up
             value = dist_map[y - 1][x];
             x_check = x;
             y_check = y - 1;
-            direction = 2;
+            direction_one = 2;
         }
 
         if(value > dist_map[y + 1][x]) {     //down
             value = dist_map[y + 1][x];
             x_check = x;
             y_check = y + 1;
-            direction = 4;
+            direction_one = 4;
         }
 
-        directions.push(direction);
+        directions.push(direction_one);
 
         y = y_check;
         x = x_check;
@@ -538,15 +540,15 @@ std::queue<int> getDircetions(int start_x, int start_y, int end_x, int end_y){
     return directions;
 } 
 //only for debugging purposes
-void showq(queue<int> gq)
-{
-    queue<int> g = gq;
-    while (!g.empty()) {
-        cout << ' ' << g.front();
-        g.pop();
-    }
-    cout << '\n';
-}
+// void showq(queue<int> gq)
+// {
+//     queue<int> g = gq;
+//     while (!g.empty()) {
+//         cout << ' ' << g.front();
+//         g.pop();
+//     }
+//     cout << '\n';
+// }
 
 void display(){
 
@@ -560,28 +562,68 @@ void display(){
         drawPacMan(pacmanX,pacmanY);
         pacmanEat(); 
 
-        drawGhost(255,165,0, ghost1X, ghost1Y);     //Inky
-        drawGhost(0,165,255, ghost2X, ghost2Y);     //Clyde
+        drawGhost(255,182,193, ghost1X, ghost1Y);       //Blinky Inky 255,165,0
+        drawGhost(0,165,255, ghost2X, ghost2Y);     //Pinky Clyde 0,165,255
 
-        if(dir_ghost1.size() == 0){         
+        if(dir_ghost1.size() == 0){                 //move Blinky
             dir_ghost1 = getDircetions(ceil(ghost1X/square_size),
-            ceil(ghost1Y/square_size), 5,2);    
+            ceil(ghost1Y/square_size), floor(pacmanX/square_size),floor(pacmanY/square_size));
+            counterMovGhost1 = 1;    
         }else{  
-            moveGhost(1, (int) dir_ghost1.front());
-            if((counterMov%((int)square_size))==0){
+            if((counterMovGhost1%((int)square_size+1))==0){
                 dir_ghost1.pop();
+            }else{
+                moveGhost(1, (int) dir_ghost1.front());
             }
+            counterMovGhost1++;
         }
 
-        if(dir_ghost2.size() == 0){                 //move Clude
-            dir_ghost2 = getDircetions(ceil(ghost2X/square_size),
-            ceil(ghost2Y/square_size), 5,2);  
-        }else{  
-            moveGhost(2, (int) dir_ghost2.front());
-            if((counterMov%((int)square_size))==0){
-                dir_ghost2.pop();
+        if(dir_ghost2.size() == 0){                 //move Pinky
+            int go_to_x = floor(pacmanX/square_size), go_to_y = floor(pacmanY/square_size);
+            
+            if(direction == 0){                     // Pinky's Strategy
+                go_to_x = floor(pacmanX/square_size) + 2;
+                go_to_y = floor(pacmanY/square_size);
+
+                if(go_to_x > 20 || map[go_to_y][go_to_x] == 0){
+                    go_to_x = floor(pacmanX/square_size);
+                }
+            }else{
+                if(direction == M_PI/2){
+                go_to_x = floor(pacmanX/square_size);
+                go_to_y = floor(pacmanY/square_size) - 2;
+
+                if(go_to_y < 0 || map[go_to_y][go_to_x] == 0){
+                    go_to_y = floor(pacmanY/square_size);
+                }
+                }else{
+                    if(direction == M_PI){
+                        go_to_x = floor(pacmanX/square_size) - 2;
+                        go_to_y = floor(pacmanY/square_size);
+
+                        if(go_to_x < 0 || map[go_to_y][go_to_x] == 0){
+                            go_to_x = floor(pacmanX/square_size);
+                        }
+                    }else{
+                            go_to_x = floor(pacmanX/square_size);
+                            go_to_y = floor(pacmanY/square_size) + 2;
+
+                            if(go_to_y > 22 || map[go_to_y][go_to_x] == 0){
+                                go_to_y = floor(pacmanY/square_size);
+                            }
+                    }
+                }
             }
-            counterMov ++;
+            
+            dir_ghost2 = getDircetions(ceil(ghost2X/square_size),
+            ceil(ghost2Y/square_size), go_to_x, go_to_y);  
+        }else{  
+            if((counterMovGhost2%((int)square_size+1))==0){
+                dir_ghost2.pop();
+            }else{
+                moveGhost(2, (int) dir_ghost2.front());
+            }
+            counterMovGhost2++;
         }
 
         pacmanGhostColission();
@@ -607,9 +649,9 @@ void display(){
         glColor3ub(255,255,255);
         
         if(num_of_lives==0){    //Game Over
-            type("Game Over", window_height/2, window_width/2, 2);
+            type("Game Over", window_height/2-100, window_width/2, 2);
         }else{                  //Player Wins
-            type("You Won!", window_height/2, window_width/2-70, 2);
+            type("You Won!", window_height/2-90 , window_width/2, 2);
         }
     }
 
