@@ -22,6 +22,7 @@ float ghost1X = 9*square_size, ghost1Y = 11*square_size;
 float ghost2X = 9*square_size, ghost2Y = 10*square_size;
 float ghost3X = 11*square_size, ghost3Y = 10*square_size;
 float ghost4X = 11*square_size, ghost4Y = 11*square_size;
+int ghost1_timer = 0, ghost2_timer = 0, ghost3_timer = 0, ghost4_timer = 0;
 
 using namespace std;
 std::queue<int> dir_ghost1, dir_ghost2, dir_ghost3, dir_ghost4;
@@ -251,34 +252,35 @@ void drawGhost(int r, int g, int b, float x_cord, float y_cord){
 }
 
 void initialiseValues(){
-        pacmanX = 10*square_size+square_size/2;
-        pacmanY = 21*square_size+square_size/2;
+    pacmanX = 10*square_size+square_size/2;
+    pacmanY = 21*square_size+square_size/2;
 
-        ghost1X = 9*square_size, ghost1Y = 11*square_size;
-        ghost2X = 9*square_size, ghost2Y = 10*square_size;
-        ghost3X = 11*square_size, ghost3Y = 10*square_size;
+    ghost1X = 9*square_size, ghost1Y = 11*square_size;
+    ghost2X = 9*square_size, ghost2Y = 10*square_size;
+    ghost3X = 11*square_size, ghost3Y = 10*square_size;
+    ghost4X = 11*square_size, ghost4Y = 11*square_size;
 
-        while (!dir_ghost1.empty()) {
-            dir_ghost1.pop();
-        }
+    while (!dir_ghost1.empty()) {
+        dir_ghost1.pop();
+    }
 
-        while (!dir_ghost2.empty()) {
-            dir_ghost2.pop();
-        }
+    while (!dir_ghost2.empty()) {
+        dir_ghost2.pop();
+    }
 
-        while (!dir_ghost3.empty()) {
-            dir_ghost3.pop();
-        }
+    while (!dir_ghost3.empty()) {
+        dir_ghost3.pop();
+    }
 
-        while (!dir_ghost4.empty()) {
-            dir_ghost4.pop();
-        }
+    while (!dir_ghost4.empty()) {
+        dir_ghost4.pop();
+    }
 
-        counterMovGhost1 = 1;
-        counterMovGhost2 = 1;
-        counterMovGhost3 = 1;
-        counterMovGhost4 = 1;
-        
+    counterMovGhost1 = 1;
+    counterMovGhost2 = 1;
+    counterMovGhost3 = 1;
+    counterMovGhost4 = 1;
+    
 }
 
 void pacmanGhostColission(){   //more about checking collision with pacman 
@@ -678,6 +680,31 @@ std::pair<int, int> inkyChaseMode(int num_tiles){
     return std::make_pair(go_to_y, go_to_x);
 }
 
+std::pair<int, int> scatterMode(int timer, int ghost){
+    int square1[4][2] = {{1,1}, {1,4}, {4,4}, {4,1}};
+    int square2[4][2] = {{1,15}, {1,19}, {4,19}, {4,15}};
+    int square3[8][2] = {{21,1},{21,9},{19,9},{19,7},{17,7},{17,5},{19,5},{19,1}};
+    int square4[8][2] = {{21,11},{21,19},{19,19},{19,15},{17,15},{17,13},{19,13},{19,11}};
+    
+    switch (ghost)
+    {
+        case 1:     //Blinky
+            return std::make_pair(square1[timer][0], square1[timer][1]);
+            break;
+        case 2:
+            return std::make_pair(square2[timer][0], square2[timer][1]);
+            break;
+        case 3:
+            return std::make_pair(square3[timer][0], square3[timer][1]);
+            break;
+        case 4:
+            return std::make_pair(square4[timer][0], square4[timer][1]);
+            break;
+        default:
+            break;
+    }
+}
+
 void display(){
 
     glClearColor(0.0f,0.0f,0.0f, 0.0f);   //background color
@@ -697,9 +724,16 @@ void display(){
         
 
         if(dir_ghost1.size() == 0){                 //move Blinky 255,0,0
-            dir_ghost1 = getDircetions(ceil(ghost1X/square_size),
-            ceil(ghost1Y/square_size), floor(pacmanX/square_size),floor(pacmanY/square_size));
-            counterMovGhost1 = 1;    
+            int go_to_x = 0,go_to_y = 0;
+            if(ghost1_timer < 4){
+                std::tie(go_to_y, go_to_x) = scatterMode(ghost1_timer,1);
+                dir_ghost1 = getDircetions(ceil(ghost1X/square_size),
+                ceil(ghost1Y/square_size), go_to_x, go_to_y);  
+            }else{
+                dir_ghost1 = getDircetions(ceil(ghost1X/square_size),
+                ceil(ghost1Y/square_size), floor(pacmanX/square_size),floor(pacmanY/square_size));
+            }
+            ghost1_timer++;    
         }else{  
             if((counterMovGhost1%((int)square_size/speed_ghost+1))==0){
                 dir_ghost1.pop();
@@ -711,9 +745,16 @@ void display(){
 
         if(dir_ghost2.size() == 0){                 //move Pinky 255,182,193
             int go_to_x = 0,go_to_y = 0;
-            std::tie(go_to_y, go_to_x) = pinkyChaseMode(4);
-            dir_ghost2 = getDircetions(ceil(ghost2X/square_size),
-            ceil(ghost2Y/square_size), go_to_x, go_to_y);  
+            if(ghost2_timer < 4){
+                std::tie(go_to_y, go_to_x) = scatterMode(ghost2_timer,2);
+                dir_ghost2 = getDircetions(ceil(ghost2X/square_size),
+                ceil(ghost2Y/square_size), go_to_x, go_to_y);  
+            }else{
+                std::tie(go_to_y, go_to_x) = pinkyChaseMode(4);
+                dir_ghost2 = getDircetions(ceil(ghost2X/square_size),
+                ceil(ghost2Y/square_size), go_to_x, go_to_y);  
+            }
+            ghost2_timer++;    
         }else{  
             if((counterMovGhost2%((int)square_size/speed_ghost+1))==0){
                 dir_ghost2.pop();
@@ -725,9 +766,16 @@ void display(){
 
         if(dir_ghost3.size() == 0){                 //move Inky 0,255,255
             int go_to_x = 0,go_to_y = 0;
-            std::tie(go_to_y, go_to_x) = inkyChaseMode(2);
-            dir_ghost3 = getDircetions(ceil(ghost3X/square_size),
-            ceil(ghost3Y/square_size), go_to_x, go_to_y);  
+            if(ghost3_timer < 8){
+                std::tie(go_to_y, go_to_x) = scatterMode(ghost3_timer,3);
+                dir_ghost3 = getDircetions(ceil(ghost3X/square_size),
+                ceil(ghost3Y/square_size), go_to_x, go_to_y);  
+            }else{
+                std::tie(go_to_y, go_to_x) = inkyChaseMode(2);
+                dir_ghost3 = getDircetions(ceil(ghost3X/square_size),
+                ceil(ghost3Y/square_size), go_to_x, go_to_y);   
+            }
+            ghost3_timer++;
         }else{  
             if((counterMovGhost3%((int)square_size/speed_ghost+1))==0){
                 dir_ghost3.pop();
@@ -740,8 +788,18 @@ void display(){
         if(dir_ghost4.size() == 0){                 //move Clyde 255,127,80
             int go_to_x = 5,go_to_y = 2;
             // std::tie(go_to_y, go_to_x) = inkyChaseMode(2);
-            dir_ghost4 = getDircetions(ceil(ghost4X/square_size),
-            ceil(ghost4Y/square_size), go_to_x, go_to_y);  
+            
+            if(ghost4_timer < 8){
+                std::tie(go_to_y, go_to_x) = scatterMode(ghost4_timer,4);
+                dir_ghost4 = getDircetions(ceil(ghost4X/square_size),
+                ceil(ghost4Y/square_size), go_to_x, go_to_y);  
+            }else{
+                go_to_x = 5,go_to_y = 2;
+                dir_ghost4 = getDircetions(ceil(ghost4X/square_size),
+            ceil(ghost4Y/square_size), go_to_x, go_to_y);   
+            } 
+
+            ghost4_timer++;
         }else{  
             if((counterMovGhost4%((int)square_size/speed_ghost+1))==0){
                 dir_ghost4.pop();
@@ -795,7 +853,7 @@ int main(int argc, char** argv)
  glutCreateWindow("OpenGL Pacman");
  glMatrixMode(GL_PROJECTION);
  glLoadIdentity();
- gluOrtho2D(0,window_width,window_height,-70);        // 0 -> -50
+ gluOrtho2D(0,window_width,window_height,-70);        
  glMatrixMode(GL_MODELVIEW);
 
  glutDisplayFunc(display);
