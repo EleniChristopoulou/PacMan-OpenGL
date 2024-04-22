@@ -8,6 +8,7 @@
 #include <queue>
 #include <vector>
 #include <algorithm>
+#include <random>
     
 char message[60];
 int score=0;
@@ -26,6 +27,9 @@ int ghost1_timer = 0, ghost2_timer = 0, ghost3_timer = 0, ghost4_timer = 0;
 
 using namespace std;
 std::queue<int> dir_ghost1, dir_ghost2, dir_ghost3, dir_ghost4;
+
+int clyde_array[5][2] = {{1,1}, {19,1}, {19,21}, {1,21}, {10,10}};
+
 queue<pair<int,int>> squares_left;
 int counterMovGhost1 = 1, counterMovGhost2 = 1, counterMovGhost3 = 1, counterMovGhost4 = 1;
 
@@ -684,7 +688,7 @@ std::pair<int, int> scatterMode(int timer, int ghost){
     int square1[4][2] = {{1,1}, {1,4}, {4,4}, {4,1}};
     int square2[4][2] = {{1,15}, {1,19}, {4,19}, {4,15}};
     int square3[8][2] = {{21,1},{21,9},{19,9},{19,7},{17,7},{17,5},{19,5},{19,1}};
-    int square4[8][2] = {{21,11},{21,19},{19,19},{19,15},{17,15},{17,13},{19,13},{19,11}};
+    int square4[8][2] = {{21,11},{21,19},{19,19},{19,16},{17,15},{17,13},{19,13},{19,11}};
     
     switch (ghost)
     {
@@ -703,6 +707,14 @@ std::pair<int, int> scatterMode(int timer, int ghost){
         default:
             break;
     }
+}
+
+int getRandomNumber() { //Chooses where Clyde is gonna head to
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    
+    std::uniform_int_distribution<> dis(0, 4);
+    return dis(gen);
 }
 
 void display(){
@@ -786,17 +798,19 @@ void display(){
         }
 
         if(dir_ghost4.size() == 0){                 //move Clyde 255,127,80
-            int go_to_x = 5,go_to_y = 2;
-            // std::tie(go_to_y, go_to_x) = inkyChaseMode(2);
+            int go_to_x ,go_to_y;
             
             if(ghost4_timer < 8){
                 std::tie(go_to_y, go_to_x) = scatterMode(ghost4_timer,4);
                 dir_ghost4 = getDircetions(ceil(ghost4X/square_size),
                 ceil(ghost4Y/square_size), go_to_x, go_to_y);  
-            }else{
-                go_to_x = 5,go_to_y = 2;
+            }else{ 
+                //Clyde's Strategy is to roam around the map
+                int num = getRandomNumber();
+                go_to_x = clyde_array[num][0],go_to_y = clyde_array[num][1];
+
                 dir_ghost4 = getDircetions(ceil(ghost4X/square_size),
-            ceil(ghost4Y/square_size), go_to_x, go_to_y);   
+                ceil(ghost4Y/square_size), go_to_x, go_to_y);
             } 
 
             ghost4_timer++;
